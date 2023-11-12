@@ -120,7 +120,7 @@ public class App {
         MongoDatabase database = mongoClient.getDatabase("JonApplicationData");
         MongoCollection<Document> collection = database.getCollection("UserData");
         Database.collection = collection;
-        Database.load();
+        // Database.load();
     }
 
     public static String randomID() {

@@ -94,7 +94,7 @@ public class Database {
                                 emails.add(new Email(job.internalJobId, m.getId(), m2.getPayload().getHeaders().stream().filter(h -> h.getName().equals("Subject")).map(MessagePartHeader::getValue).findFirst().orElse("[No Subject]"), m.getInternalDate()));
                                 // System.out.println(m.getPayload().getBody().getData());
                                 // System.out.println(StringUtils.newStringUtf8(   Base64.decodeBase64 (m.getRaw())));
-                                if (containsIgnoreCase(messageData, "will not") ||
+                                if ((containsIgnoreCase(messageData, "will not") && !containsIgnoreCase(messageData, "replies will not"))||
                                     containsIgnoreCase(messageData, "unfortunately") ||
                                     containsIgnoreCase(messageData, "other candidate")
                                 ) {

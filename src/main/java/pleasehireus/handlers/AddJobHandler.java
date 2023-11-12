@@ -19,7 +19,7 @@ import pleasehireus.Database.Job;
 import pleasehireus.Database.User;
 
 public class AddJobHandler extends Handler.Abstract {
-    static record RequestData(String token, String url, String position, String company, String time) { }
+    static record RequestData(String token, String url, String position, String company) { }
 
     @Override
     public boolean handle(Request request, Response response, Callback callback) throws Exception {
@@ -30,7 +30,7 @@ public class AddJobHandler extends Handler.Abstract {
         GmailAccountCred c = App.TOKEN_2_GOOGLE_MAP.get(rd.token);
         Database.modifyUser(c.email(), u -> {
             Job[] jobs = Arrays.copyOf(u.jobs(), u.jobs().length + 1);
-            jobs[jobs.length - 1] = new Job(rd.url, rd.position, rd.time, rd.company, App.randomID(), "In Progress");
+            jobs[jobs.length - 1] = new Job(rd.url, rd.position, "" + System.currentTimeMillis(), rd.company, App.randomID(), "In Progress");
             return new User(jobs, u.emails(), u.containsEmailsUpToTimestamp());
         });
         callback.succeeded();

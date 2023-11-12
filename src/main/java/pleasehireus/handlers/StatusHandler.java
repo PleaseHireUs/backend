@@ -20,6 +20,7 @@ import com.google.common.html.HtmlEscapers;
 
 import pleasehireus.App;
 import pleasehireus.Database;
+import pleasehireus.App.GmailAccountCred;
 import pleasehireus.Database.Email;
 import pleasehireus.Database.Job;
 import pleasehireus.Database.User;
@@ -39,9 +40,11 @@ public class StatusHandler extends Handler.Abstract  {
     public boolean handle(Request request, Response response, Callback callback) throws Exception {
         // ByteArrayOutputStream os = new ByteArrayOutputStream();
         // OutputStreamWriter w = new OutputStreamWriter(os);
-        String email_addy = App.TOKEN_2_GOOGLE_MAP.get(
+        GmailAccountCred cred = App.TOKEN_2_GOOGLE_MAP.get(
             request.getHttpURI().toString().split("/status/")[1]
-            ).email();
+            );
+        String email_addy = cred.email();
+        Database.updateUserEmails(request.getHttpURI().toString().split("/status/")[1], email_addy);
         User u = Database.email2user.get(
             email_addy
         );
