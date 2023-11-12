@@ -60,7 +60,17 @@ public class OauthCallbackHandler extends Handler.Abstract {
 
             Database.modifyUser(email, u -> {
                 Job[] jobs = Arrays.copyOf(u.jobs(), u.jobs().length + 1);
-                jobs[jobs.length - 1] = new Job("example.com", "Intern", "0", "illumina", App.randomID());
+                jobs[jobs.length - 1] = new Job("example.com", "Intern", "0", "illumina", App.randomID(), "In Progress");
+                return new User(jobs, u.emails(), u.containsEmailsUpToTimestamp());
+            });
+            Database.modifyUser(email, u -> {
+                Job[] jobs = Arrays.copyOf(u.jobs(), u.jobs().length + 1);
+                jobs[jobs.length - 1] = new Job("example.com", "Intern", "0", "Patreon", App.randomID(), "In Progress");
+                return new User(jobs, u.emails(), u.containsEmailsUpToTimestamp());
+            });
+            Database.modifyUser(email, u -> {
+                Job[] jobs = Arrays.copyOf(u.jobs(), u.jobs().length + 1);
+                jobs[jobs.length - 1] = new Job("example.com", "Intern", "0", "Shure", App.randomID(), "In Progress");
                 return new User(jobs, u.emails(), u.containsEmailsUpToTimestamp());
             });
 

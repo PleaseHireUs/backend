@@ -59,12 +59,17 @@ public class StatusHandler extends Handler.Abstract  {
             emails2.sort((a, b) -> Long.compare(b.timestamp(), a.timestamp()));
         }
         ArrayList<Job> jobs = new ArrayList<>(Arrays.asList(u.jobs()));
-        jobs.sort((a, b) -> Long.compare(jobLastTouched.get(b), jobLastTouched.get(a)));
+        jobs.sort((a, b) -> Long.compare(jobLastTouched.get(b.internalJobId()), jobLastTouched.get(a.internalJobId())));
 
         var esc = HtmlEscapers.htmlEscaper();
 
         for (Job j : jobs) {
-            builder.append("<div class=\"hero\">");
+            if ("Rejected".equals(j.status())) {
+                builder.append("<div class=\"hero reject\">");
+            } else {
+                builder.append("<div class=\"hero\">");
+            }
+            
             builder.append("<hgroup>");
             builder.append("<h3>");
             builder.append(esc.escape(j.company()));
@@ -74,6 +79,8 @@ public class StatusHandler extends Handler.Abstract  {
             builder.append("</h4>");
             builder.append("</hgroup>");
             builder.append("Applied " + daysAgo(Long.parseLong(j.time())) + " days ago");
+            builder.append("<br />");
+            builder.append("Status: " + j.status());
             builder.append("<br />");
             if (emails.containsKey(j.internalJobId())) {
                 builder.append("<br />");
