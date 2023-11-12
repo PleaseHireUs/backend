@@ -39,10 +39,11 @@ public class StatusHandler extends Handler.Abstract  {
     public boolean handle(Request request, Response response, Callback callback) throws Exception {
         // ByteArrayOutputStream os = new ByteArrayOutputStream();
         // OutputStreamWriter w = new OutputStreamWriter(os);
+        String email_addy = App.TOKEN_2_GOOGLE_MAP.get(
+            request.getHttpURI().toString().split("/status/")[1]
+            ).email();
         User u = Database.email2user.get(
-            App.TOKEN_2_GOOGLE_MAP.get(
-                request.getHttpURI().toString().split("/status/")[1]
-                ).email()
+            email_addy
         );
         StringBuilder builder = new StringBuilder();
         HashMap<String, List<Email>> emails = new HashMap<>();
@@ -72,12 +73,31 @@ public class StatusHandler extends Handler.Abstract  {
             builder.append(esc.escape(j.position()));
             builder.append("</h4>");
             builder.append("</hgroup>");
-            builder.append(j.time());
+            builder.append("Applied " + daysAgo(Long.parseLong(j.time())) + " days ago");
+            builder.append("<br />");
+            if (emails.containsKey(j.internalJobId())) {
+                builder.append("<br />");
+                builder.append("Recent Updates: ");
+                builder.append("<ul>");
+                for (Email e : emails.get(j.internalJobId())) {
+                    builder.append("<li>");
+                    builder.append("<a href=\"https://mail.google.com/mail/u/" + email_addy + "/#all/" + e.id() + "\" target=\"_blank\" rel=\"noopener noreferrer\">");
+                    builder.append(esc.escape(e.subject()));
+                    builder.append("</a>");
+                    builder.append(" (" + daysAgo(e.timestamp()) + " days ago)");
+                    builder.append("</li>");
+                }
+                builder.append("</ul>");
+            }
             builder.append("</div>");
         }
         String r = template.replace("$$GEN$$", builder);
         response.write(true, ByteBuffer.wrap(r.getBytes(StandardCharsets.UTF_8)), callback);
         return true;
+    }
+
+    static long daysAgo(long unixMilis) {
+        return (System.currentTimeMillis() - unixMilis) / (1000 * 60 * 60 * 24);
     }
     
 }

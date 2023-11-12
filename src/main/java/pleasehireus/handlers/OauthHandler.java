@@ -35,7 +35,7 @@ public class OauthHandler extends Handler.Abstract {
         if (cred != null) {
             callback.succeeded();
         } else {
-            response.write(true, ByteBuffer.wrap(flow.newAuthorizationUrl().setRedirectUri("https://jobtrack.ben.enterprises/oauthcallback").build().getBytes(StandardCharsets.UTF_8)), callback);
+            Response.sendRedirect(request, response, callback, flow.newAuthorizationUrl().setRedirectUri("https://jobtrack.ben.enterprises/oauthcallback").build());
         }
 
         return true;
