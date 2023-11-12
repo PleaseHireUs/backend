@@ -5,9 +5,12 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import org.bson.Document;
 
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -17,20 +20,48 @@ import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.model.Message;
 import com.google.api.services.gmail.model.MessagePartHeader;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.mongodb.BasicDBObject;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
 
 public class Database {
     public static ConcurrentHashMap<String, User> email2user = new ConcurrentHashMap<>();
     public static record User(Job[] jobs, Email[] emails, long containsEmailsUpToTimestamp) { }
     public static record Job(String url, String position, String time, String company, String internalJobId, String status) { }
     public static record Email(String internalJobId, String id, /* nullable */ String subject, long timestamp) { }
+    static MongoCollection<Document> collection;
+
+    public static record MogoYadaYa() {
+    }
 
     public static void modifyUser(String email, Function<User, User> func) {
         email2user.compute(email, (k, e) -> {
             if (e == null) e = new User(new Job[0], new Email[0], 0l);
             return func.apply(e);
         });
+        save();
+    }
 
-        //todo save
+    public static synchronized void save() {
+        BasicDBObject d = new BasicDBObject();
+        d.put("data", new Gson().toJson(email2user).toString());
+        BasicDBObject query = new BasicDBObject();
+        query.put("hostingName", "GoDaddy"); // (1)
+        BasicDBObject updateObject = new BasicDBObject();
+        updateObject.put("$set", d); // (3)
+        collection.findOneAndUpdate(query, updateObject, new FindOneAndUpdateOptions().upsert(true)) ;
+    }
+
+    public static synchronized void load() {
+        BasicDBObject query = new BasicDBObject();
+        query.put("hostingName", "GoDaddy"); // (1)
+        Document d = collection.find(query).first();
+        if (d == null) return;
+        TypeToken<Map<String, User>> mapType = new TypeToken<Map<String, User>>(){};
+        email2user = new ConcurrentHashMap<>(new Gson().fromJson(d.getString("yeet"), mapType));
     }
 
     public static void updateUserEmails(String token, String email) {
@@ -59,7 +90,7 @@ public class Database {
                         String messageData = StringUtils.newStringUtf8(   Base64.decodeBase64 (m.getRaw()));
                         for (int i = 0; i < jobs.size(); i++) {
                             Job job = jobs.get(i);
-                            if (containsIgnoreCase(messageData, job.company()) && !(containsIgnoreCase(messageData, "Posted Today") && containsIgnoreCase(messageData, "swelist")) /*|| m.getPayload().getHeaders().stream().filter(h -> containsIgnoreCase(h.getValue(), job.company())).findAny().isPresent()*/) {
+                            if (containsIgnoreCase(messageData, job.company()) && !(containsIgnoreCase(messageData, "swelist")) /*|| m.getPayload().getHeaders().stream().filter(h -> containsIgnoreCase(h.getValue(), job.company())).findAny().isPresent()*/) {
                                 emails.add(new Email(job.internalJobId, m.getId(), m2.getPayload().getHeaders().stream().filter(h -> h.getName().equals("Subject")).map(MessagePartHeader::getValue).findFirst().orElse("[No Subject]"), m.getInternalDate()));
                                 // System.out.println(m.getPayload().getBody().getData());
                                 // System.out.println(StringUtils.newStringUtf8(   Base64.decodeBase64 (m.getRaw())));

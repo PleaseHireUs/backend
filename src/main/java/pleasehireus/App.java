@@ -8,6 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.bson.BsonDocument;
+import org.bson.Document;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -28,6 +30,14 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.oauth2.Oauth2Scopes;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.ServerApi;
+import com.mongodb.ServerApiVersion;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 import pleasehireus.handlers.AddJobHandler;
 import pleasehireus.handlers.OauthCallbackHandler;
@@ -48,6 +58,7 @@ public class App {
 
 
     public static void main(String[] args) throws Exception {
+        mongoDbCrap();
         GoogleClientSecrets clientSecrets;
         try (BufferedReader r = Files.newBufferedReader(Paths.get("./client_secret_441026547871-muj075stfof2j8eord3j1fdibagspu5b.apps.googleusercontent.com.json"))) {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, r);
@@ -90,6 +101,26 @@ public class App {
 
         server.start();
         System.out.println("http://localhost:" + connector.getPort());
+    }
+
+    public static void mongoDbCrap() {
+        // Set system properties via commandline or programmatically
+        // System.setProperty("javax.net.ssl.keyStore", "<path_to_keystore>");
+        // System.setProperty("javax.net.ssl.keyStorePassword", "<keystore_password>");
+
+        String uri = "mongodb+srv://user-auth:MadHack123@cluster0.5jai7nf.mongodb.net/?retryWrites=true&w=majority";
+        ConnectionString connectionString = new ConnectionString(uri);
+        MongoClientSettings settings = MongoClientSettings.builder()
+                .applyConnectionString(connectionString)
+                .serverApi(ServerApi.builder()
+                    .version(ServerApiVersion.V1)
+                    .build())
+                .build();
+        MongoClient mongoClient = MongoClients.create(settings);
+        MongoDatabase database = mongoClient.getDatabase("JonApplicationData");
+        MongoCollection<Document> collection = database.getCollection("UserData");
+        Database.collection = collection;
+        Database.load();
     }
 
     public static String randomID() {
