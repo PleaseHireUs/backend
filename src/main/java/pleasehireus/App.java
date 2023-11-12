@@ -3,8 +3,10 @@ package pleasehireus;
 import java.io.BufferedReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -16,6 +18,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
+import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
@@ -26,8 +29,10 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.oauth2.Oauth2Scopes;
 
+import pleasehireus.handlers.AddJobHandler;
 import pleasehireus.handlers.OauthCallbackHandler;
 import pleasehireus.handlers.OauthHandler;
+import pleasehireus.handlers.StatusHandler;
 
 /**
  * Hello world!
@@ -37,12 +42,14 @@ public class App {
     public static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     public static final String TOKENS_DIRECTORY_PATH = "tokens";
     public static final List<String> SCOPES = Arrays.asList(Oauth2Scopes.USERINFO_EMAIL, GmailScopes.GMAIL_READONLY);
-
+    public static record GmailAccountCred(Credential credential, String email) {
+    }
+    public static final ConcurrentHashMap<String, GmailAccountCred> TOKEN_2_GOOGLE_MAP = new ConcurrentHashMap<>();
 
 
     public static void main(String[] args) throws Exception {
         GoogleClientSecrets clientSecrets;
-        try (BufferedReader r = Files.newBufferedReader(Paths.get("../client_secret_441026547871-muj075stfof2j8eord3j1fdibagspu5b.apps.googleusercontent.com.json"))) {
+        try (BufferedReader r = Files.newBufferedReader(Paths.get("./client_secret_441026547871-muj075stfof2j8eord3j1fdibagspu5b.apps.googleusercontent.com.json"))) {
             clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, r);
         }
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
@@ -71,7 +78,9 @@ public class App {
         ContextHandlerCollection contextCollection = new ContextHandlerCollection();
         contextCollection.addHandler(new ContextHandler(new TeapotHandler(), "/teapot"));
         contextCollection.addHandler(new ContextHandler(new OauthHandler(clientSecrets, flow), "/login"));
-        contextCollection.addHandler(new OauthCallbackHandler(clientSecrets, flow));
+        // contextCollection.addHandler(new OauthCallbackHandler(clientSecrets, flow));
+        contextCollection.addHandler(new ContextHandler(new AddJobHandler(), "/addjob"));
+        contextCollection.addHandler(new ContextHandler(new StatusHandler(), "/status"));
         // contextCollection.addHandler(new ServletC);
 
         server.setHandler(contextCollection);
@@ -81,6 +90,15 @@ public class App {
 
         server.start();
         System.out.println("http://localhost:" + connector.getPort());
+    }
+
+    public static String randomID() {
+        SecureRandom sr = new SecureRandom();
+        StringBuilder token = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            token.append((char)('0' + sr.nextInt(0, 10)));
+        }
+        return token.toString();
     }
 
     static class TeapotHandler extends Handler.Abstract {
